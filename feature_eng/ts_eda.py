@@ -25,6 +25,11 @@ def time_series_rolling(input_df:pd.DataFrame, column:str)-> pd.DataFrame:
     data_copy[column+"_rolling"] = data_copy[column].rolling(window=12).mean()
     return data_copy
 
+def time_series_lagged(input_df:pd.DataFrame, column:str, window:int)-> pd.DataFrame:
+    data_copy = copy_df(input_df)
+    data_copy[column+f"_{window}_lagged"] = data_copy[column].shift(window)
+    return data_copy
+
 def time_series_log(input_df:pd.DataFrame, column:str)-> pd.DataFrame:
     data_copy = copy_df(input_df)
     data_copy[column+"_log"] = np.log(data_copy[column])
@@ -102,3 +107,26 @@ def time_series_is_weekend(input_df:pd.DataFrame, column:str)-> pd.DataFrame:
     data_copy = copy_df(input_df)
     data_copy[column+"_is_weekend"] = data_copy[column].apply(lambda x: 1 if x.weekday() in [5,6] else 0)
     return data_copy
+
+# ensure that date is index before submitting for this function
+def create_time_features(input_df:pd.Dataframe , target=None):
+    """
+    Creates time series features from datetime index for modeling
+    """
+    input_df['date'] = input_df.index
+    input_df['hour'] = input_df['date'].dt.hour
+    input_df['dayofweek'] = input_df['date'].dt.dayofweek
+    input_df['quarter'] = input_df['date'].dt.quarter
+    input_df['month'] = input_df['date'].dt.month
+    input_df['year'] = input_df['date'].dt.year
+    input_df['dayofyear'] = input_df['date'].dt.dayofyear
+    input_df['sin_day'] = np.sin(input_df['dayofyear'])
+    input_df['cos_day'] = np.cos(input_df['dayofyear'])
+    input_df['dayofmonth'] = input_df['date'].dt.day
+    input_df['weekofyear'] = input_df['date'].dt.isocalendar().week
+    X = input_df.drop(['date'], axis=1)
+    if target:
+        y = input_df[target]
+        X = X.drop([target], axis=1)
+        return X, y
+    return X
